@@ -1,0 +1,383 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Production Efficiency Report</title>
+<style>
+:root {
+  --bg:#f3f6fb; --card:#fff; --ink:#17253b;
+  --muted:#66758a; --accent:#1769e0; --line:#dce4ef;
+  --soft:#eaf2ff;
+}
+* { box-sizing:border-box; }
+body {
+  margin:0; font-family:Arial,sans-serif; background:var(--bg);
+  color:var(--ink); padding:20px;
+}
+main { max-width:1250px; margin:auto; }
+header {
+  background:#142e55; color:white; padding:25px;
+  border-radius:16px; margin-bottom:18px;
+}
+header h1 { margin:0 0 8px; font-size:26px; }
+header p { margin:0; color:#d8e5f7; font-size:14px; }
+.actions {
+  display:flex; flex-wrap:wrap; gap:10px; margin:16px 0;
+}
+button {
+  border:0; border-radius:8px; padding:12px 16px;
+  font-size:14px; font-weight:700; cursor:pointer;
+}
+.primary { background:var(--accent); color:white; }
+.secondary { background:white; border:1px solid var(--line); color:var(--ink); }
+.danger { background:#fff0f0; color:#b42318; }
+.panel {
+  background:var(--card); border:1px solid var(--line);
+  border-radius:14px; padding:20px; margin-bottom:16px;
+}
+h2 { font-size:18px; margin:0 0 16px; }
+.grid {
+  display:grid; grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:14px;
+}
+.field { display:flex; flex-direction:column; gap:7px; min-width:0; }
+label { font-size:12px; font-weight:700; color:var(--muted); }
+input {
+  width:100%; min-width:0; padding:11px;
+  border:1px solid var(--line); border-radius:8px;
+  font-size:14px; background:white; color:var(--ink);
+}
+input:focus { outline:2px solid #b6d0ff; border-color:var(--accent); }
+input[readonly] { background:var(--soft); font-weight:700; }
+.results {
+  display:grid; grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:12px;
+}
+.metric { padding:15px; border-radius:10px; background:var(--soft); }
+.metric span { display:block; font-size:12px; color:var(--muted); }
+.metric strong { display:block; font-size:23px; margin-top:8px; overflow-wrap:anywhere; }
+.small { font-size:12px; color:var(--muted); line-height:1.6; }
+.table-wrap { overflow-x:auto; }
+table { border-collapse:collapse; width:100%; font-size:12px; white-space:nowrap; }
+th,td { padding:10px; border-bottom:1px solid var(--line); text-align:left; }
+th { background:#edf3fc; }
+#status { font-size:13px; color:#147d43; margin-top:10px; }
+@media(max-width:850px) {
+  .grid,.results { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media(max-width:480px) {
+  body { padding:10px; }
+  header,.panel { padding:15px; }
+  .grid,.results { grid-template-columns:1fr 1fr; gap:10px; }
+  header h1 { font-size:22px; }
+  .metric strong { font-size:19px; }
+  button { padding:11px; }
+}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <h1>Production Efficiency Report</h1>
+  <p>Enter the essential production details. Calculations and report output update automatically.</p>
+</header>
+
+<div class="actions">
+  <button class="primary" id="copyBtn">Copy Report for Excel</button>
+  <button class="secondary" id="saveBtn">Save Record</button>
+  <button class="secondary" id="newBtn">New Report</button>
+  <button class="secondary" id="csvBtn">Download CSV</button>
+</div>
+
+<section class="panel">
+<h2>1. Shift & Production Inputs</h2>
+<div class="grid">
+  <div class="field"><label for="date">Date</label><input id="date" type="date"></div>
+  <div class="field"><label for="start">Start Time</label><input id="start" type="time"></div>
+  <div class="field"><label for="end">End Time</label><input id="end" type="time"></div>
+  <div class="field"><label for="meal">Meal Break (minutes)</label><input id="meal" type="number" min="0" value="30"></div>
+
+  <div class="field"><label for="breakdown">Maintenance Breakdown (minutes)</label><input id="breakdown" type="number" min="0" value="0"></div>
+  <div class="field"><label for="opbreak">Operational Break (minutes)</label><input id="opbreak" type="number" min="0" value="0"></div>
+  <div class="field"><label for="weight">Total Weight Processed (kg)</label><input id="weight" type="number" min="0" step="any" value="0"></div>
+  <div class="field"><label for="crateWeight">Average Weight per Crate (kg)</label><input id="crateWeight" type="number" min="0" step="any" placeholder="Enter crate weight"></div>
+
+  <div class="field"><label for="packers">Number of Packers</label><input id="packers" type="number" min="0" value="0"></div>
+  <div class="field"><label for="labors">Number of Labors</label><input id="labors" type="number" min="0" value="0"></div>
+  <div class="field"><label for="lots">Total Lots Processed</label><input id="lots" type="number" min="0" value="0"></div>
+  <div class="field"><label for="completed">Total Lots Completed</label><input id="completed" type="number" min="0" value="0"></div>
+
+  <div class="field"><label for="cumulative">Total Crates Processed Till Date</label><input id="cumulative" type="number" min="0" value="0"></div>
+</div>
+<p class="small">For an overnight shift, enter the actual start and end times. The calculator treats an end time earlier than the start time as the following day.</p>
+</section>
+
+<section class="panel">
+<h2>2. Automatically Calculated Results</h2>
+<div class="results">
+  <div class="metric"><span>Total Time</span><strong id="totalTime">0h 00m</strong></div>
+  <div class="metric"><span>Time Value Formula (decimal hours)</span><strong id="timeValue">0.00</strong></div>
+  <div class="metric"><span>Total Operational Time</span><strong id="operational">0h 00m</strong></div>
+  <div class="metric"><span>Net GL Runtime</span><strong id="runtime">0h 00m</strong></div>
+  <div class="metric"><span>Approx. Crates Count</span><strong id="crates">—</strong></div>
+  <div class="metric"><span>Overall Efficiency</span><strong id="overall">0.00%</strong></div>
+  <div class="metric"><span>Net Efficiency</span><strong id="net">0.00%</strong></div>
+  <div class="metric"><span>Efficiency per Packer per Hour</span><strong id="perPacker">0.00</strong></div>
+</div>
+<p class="small">
+  Current formulas: Operational time = total time − meal break.
+  Net GL runtime = operational time − maintenance breakdown − operational break.
+  Overall efficiency = net runtime ÷ total elapsed time.
+  Net efficiency = net runtime ÷ (operational time − maintenance breakdown).
+  Packer efficiency = processed kg ÷ (packers × net runtime hours).
+  Crates = processed kg ÷ average kg per crate.
+</p>
+</section>
+
+<section class="panel">
+<h2>3. Report Preview</h2>
+<p class="small">Copy Report for Excel creates one tab-separated row with all 20 columns in your requested order.</p>
+<div class="table-wrap">
+<table>
+<thead><tr><th>Parameter</th><th>Calculated / Entered Value</th></tr></thead>
+<tbody id="preview"></tbody>
+</table>
+</div>
+<div id="status" role="status" aria-live="polite"></div>
+</section>
+
+<section class="panel">
+<h2>4. Saved Records</h2>
+<p class="small">Records are kept in this browser on this device. Download your CSV regularly as a backup.</p>
+<div class="table-wrap">
+<table>
+<thead><tr><th>Date</th><th>Start</th><th>End</th><th>Weight (kg)</th><th>Net Runtime</th><th>Overall Efficiency</th><th>Action</th></tr></thead>
+<tbody id="records"></tbody>
+</table>
+</div>
+</section>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const fields = [
+  "date","start","end","meal","breakdown","opbreak","weight",
+  "crateWeight","packers","labors","lots","completed","cumulative"
+];
+
+const headers = [
+ "Date","Start Time","End Time","Total time","Time Value formula",
+ "Meal Break","Total Operational Time","Maintenance Breakdown Time",
+ "Operational Break Time","Net GL Runtime","Total weight Processed",
+ "Aprox. crates count","Overall Efficiency","Net Efficiency",
+ "No. of Packers","Efficiency per packer per hour","No. of Labors",
+ "Total Lots Processed","Total Lots Completed",
+ "Total Crates Processed Till Date"
+];
+
+let saved = [];
+try { saved = JSON.parse(localStorage.getItem("productionRecords") || "[]"); }
+catch { saved = []; }
+
+const num = id => Math.max(0, Number($(id).value) || 0);
+const fmt = n => Number.isFinite(n) ? n.toFixed(2) : "0.00";
+const duration = mins => {
+  mins = Math.max(0, Math.round(mins));
+  return Math.floor(mins/60) + "h " + String(mins%60).padStart(2,"0") + "m";
+};
+const timeString = mins => {
+  mins = Math.max(0, Math.round(mins));
+  return String(Math.floor(mins/60)).padStart(2,"0") + ":" +
+         String(mins%60).padStart(2,"0");
+};
+const pct = n => fmt(n) + "%";
+
+function calculate() {
+  const start = $("start").value;
+  const end = $("end").value;
+  let totalMin = 0;
+  let validShift = false;
+
+  if (start && end) {
+    const toMin = t => {
+      const [h,m] = t.split(":").map(Number);
+      return h*60 + m;
+    };
+    totalMin = toMin(end) - toMin(start);
+    if (totalMin <= 0) totalMin += 1440;
+    validShift = true;
+  }
+
+  const meal = num("meal");
+  const breakdown = num("breakdown");
+  const opbreak = num("opbreak");
+  const operational = Math.max(0, totalMin - meal);
+  const afterMaintenance = Math.max(0, operational - breakdown);
+  const netRuntime = Math.max(0, afterMaintenance - opbreak);
+  const weight = num("weight");
+  const packers = num("packers");
+  const crateWeight = num("crateWeight");
+
+  const overall = totalMin > 0 ? netRuntime / totalMin * 100 : 0;
+  const netEfficiency = afterMaintenance > 0
+    ? netRuntime / afterMaintenance * 100 : 0;
+  const perPacker = packers > 0 && netRuntime > 0
+    ? weight / (packers * netRuntime / 60) : 0;
+  const crates = crateWeight > 0 ? weight / crateWeight : null;
+
+  const r = {
+    date:$("date").value,
+    start,end,
+    total:validShift ? duration(totalMin) : "",
+    timeValue:validShift ? fmt(totalMin/60) : "",
+    meal:duration(meal),
+    operational:validShift ? duration(operational) : "",
+    breakdown:duration(breakdown),
+    opbreak:duration(opbreak),
+    runtime:validShift ? duration(netRuntime) : "",
+    weight:fmt(weight),
+    crates:crates === null ? "" : String(Math.round(crates)),
+    overall:validShift ? pct(overall) : "",
+    net:validShift ? pct(netEfficiency) : "",
+    packers:String(packers),
+    perPacker:fmt(perPacker),
+    labors:String(num("labors")),
+    lots:String(num("lots")),
+    completed:String(num("completed")),
+    cumulative:String(num("cumulative")),
+    totalMin, operational, netRuntime, overall, netEfficiency, perPacker
+  };
+
+  $("totalTime").textContent = validShift ? r.total : "—";
+  $("timeValue").textContent = validShift ? r.timeValue : "—";
+  $("operational").textContent = validShift ? r.operational : "—";
+  $("runtime").textContent = validShift ? r.runtime : "—";
+  $("crates").textContent = crates === null ? "Enter crate kg" : r.crates;
+  $("overall").textContent = r.overall || "—";
+  $("net").textContent = r.net || "—";
+  $("perPacker").textContent = validShift ? r.perPacker : "—";
+
+  const values = [
+    r.date,r.start,r.end,r.total,r.timeValue,r.meal,r.operational,
+    r.breakdown,r.opbreak,r.runtime,r.weight,r.crates,r.overall,r.net,
+    r.packers,r.perPacker,r.labors,r.lots,r.completed,r.cumulative
+  ];
+  r.values = values;
+
+  $("preview").innerHTML = headers.map((h,i) =>
+    "<tr><td>" + escapeHTML(h) + "</td><td>" +
+    escapeHTML(values[i] || "—") + "</td></tr>"
+  ).join("");
+
+  window.currentReport = r;
+  return r;
+}
+
+function escapeHTML(s) {
+  return String(s).replace(/[&<>"']/g, c => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  })[c]);
+}
+
+function reportText(r) {
+  return headers.join("\t") + "\n" + r.values.join("\t");
+}
+
+async function copyReport() {
+  const r = calculate();
+  try {
+    await navigator.clipboard.writeText(reportText(r));
+    $("status").textContent = "Report copied. Paste it directly into Excel.";
+  } catch {
+    const ta = document.createElement("textarea");
+    ta.value = reportText(r);
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand("copy");
+    ta.remove();
+    $("status").textContent = ok
+      ? "Report copied. Paste it into Excel."
+      : "Copy failed. Select and copy the report manually.";
+  }
+}
+
+function renderRecords() {
+  $("records").innerHTML = saved.map((r,i) =>
+    "<tr><td>" + escapeHTML(r.values[0]) + "</td><td>" +
+    escapeHTML(r.values[1]) + "</td><td>" +
+    escapeHTML(r.values[2]) + "</td><td>" +
+    escapeHTML(r.values[10]) + "</td><td>" +
+    escapeHTML(r.values[9]) + "</td><td>" +
+    escapeHTML(r.values[12]) + "</td><td><button class='danger' data-delete='" +
+    i + "'>Delete</button></td></tr>"
+  ).join("");
+}
+
+$("saveBtn").addEventListener("click", () => {
+  const r = calculate();
+  if (!r.date || !r.start || !r.end) {
+    $("status").textContent = "Please enter the date, start time, and end time first.";
+    return;
+  }
+  saved.push({values:r.values});
+  try {
+    localStorage.setItem("productionRecords", JSON.stringify(saved));
+    $("status").textContent = "Record saved on this device.";
+  } catch {
+    saved.pop();
+    $("status").textContent = "Storage is full. Download your CSV backup.";
+  }
+  renderRecords();
+});
+
+$("records").addEventListener("click", e => {
+  const b = e.target.closest("[data-delete]");
+  if (!b) return;
+  saved.splice(Number(b.dataset.delete),1);
+  try { localStorage.setItem("productionRecords",JSON.stringify(saved)); }
+  catch {}
+  renderRecords();
+});
+
+$("copyBtn").addEventListener("click", copyReport);
+
+$("newBtn").addEventListener("click", () => {
+  fields.forEach(id => $(id).value = "");
+  $("meal").value = "30";
+  $("breakdown").value = "0";
+  $("opbreak").value = "0";
+  ["weight","packers","labors","lots","completed","cumulative"]
+    .forEach(id => $(id).value = "0");
+  $("status").textContent = "New report ready.";
+  calculate();
+});
+
+$("csvBtn").addEventListener("click", () => {
+  const current = calculate();
+  const all = saved.map(r => r.values);
+  if (current.date && current.start && current.end) all.push(current.values);
+  const csvCell = v => '"' + String(v ?? "").replace(/"/g,'""') + '"';
+  const csv = [headers,...all].map(row => row.map(csvCell).join(",")).join("\r\n");
+  const blob = new Blob(["\uFEFF"+csv], {type:"text/csv;charset=utf-8;"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "production-report.csv";
+  a.click();
+  URL.revokeObjectURL(url);
+  $("status").textContent = "CSV download requested.";
+});
+
+fields.forEach(id => $(id).addEventListener("input", calculate));
+
+$("date").value = new Date().getFullYear() + "-" +
+  String(new Date().getMonth()+1).padStart(2,"0") + "-" +
+  String(new Date().getDate()).padStart(2,"0");
+
+calculate();
+renderRecords();
+</script>
+</body>
+</html>
